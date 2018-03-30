@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>Raphaël · Animation</title>
+	<style media="screen">
+		body {margin:0; padding:0;}
+		#holder {
+			height: 720px;
+			width: 1280px;
+			background-color: #333;
+		}
+	</style>
+	<script src="raphael.min.js"></script>
+
+	<script>
+		var Padding = 0.01;
+		var Column = 3;
+		var NodeCount = 6;
+		var Nodes = null;
+		var Paper = null;
+
+		function layout_rects(padding, width, height, count, column) {
+			var row = Math.ceil(count / column);
+			var iw = (width - padding * (count+1)) / column;
+			var ih = (height - padding * (row +1)) / row;
+			var v = Math.min(iw, ih);
+			var mx = (iw - v) / 2;
+			var my = (ih - v) / 2;
+
+			var set = Paper.set();
+
+			var ix = 0, iy = padding + my;
+			for (var i=0; i<count; i++) {
+				ix += padding + mx;
+				var rect = Paper.rect(ix, iy, v, v);
+				set.push(rect);
+				ix += v + mx;
+
+				if (i % column == column -1) {
+					ix = 0;
+					iy += ih + padding + my;
+				}
+			}
+			return set;
+		}
+
+		function layout_lines() {
+			
+		}
+
+		var AnimationIndex = 0;
+		var Animations = [
+			function() {
+				var r = Nodes[0].attr('width');
+				AnimationIndex++;
+				Nodes.stop().animate({
+					"50%": {'stroke': '#fff', 'stroke-width': 3},
+					"100%": {'r' : r}
+				}, 1000).
+				animate({'width' : r/3, 'height': r/3}, 1000).
+				animate({'transform': ['t', r/3, r/3], callback: Animations[AnimationIndex]}, 1000);
+			},
+			function() {
+			}
+		];
+		
+		function run () {
+			var holder = document.getElementById("holder"); 
+			var width = holder.clientWidth;
+			var height = holder.clientHeight;
+			var mSize = Math.max(width, height);
+			Paper = Raphael(0, 0, width, height);
+			console.log( mSize * Padding, width, height, NodeCount, Column);
+			Nodes = layout_rects(mSize * Padding, width, height, NodeCount, Column);
+
+			Animations[0]();
+		}
+
+		window.onload = function () {
+			run();
+		};
+	</script>
+</head>
+
+<body>
+	<div id="holder"></div>
+</body>
+
+</html>
