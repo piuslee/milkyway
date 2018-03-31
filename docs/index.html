@@ -3,6 +3,7 @@
 
 <head>
 	<meta charset="utf-8">
+	<meta name="mobile-web-app-capable" content="yes">
 	<title>Raphaël · Animation</title>
 	<style media="screen">
 		body {margin:0; padding:0;}
@@ -21,10 +22,15 @@
 		var Nodes = null;
 		var Paper = null;
 
-		function layout_rects(padding, width, height, count, column) {
+		var Width = 0;
+		var Height = 0;
+
+		var TextDummy = null;
+
+		function layout_rects(padding, count, column) {
 			var row = Math.ceil(count / column);
-			var iw = (width - padding * (count+1)) / column;
-			var ih = (height - padding * (row +1)) / row;
+			var iw = (Width - padding * (count+1)) / column;
+			var ih = (Height - padding * (row +1)) / row;
 			var v = Math.min(iw, ih);
 			var mx = (iw - v) / 2;
 			var my = (ih - v) / 2;
@@ -46,8 +52,121 @@
 			return set;
 		}
 
-		function layout_lines() {
-			
+		function layout_to_circle() {
+			var cx = Width / 2;
+			var cy = Height / 2;
+
+			var r1 = Math.min(Width, Height) * 0.4;
+			var inc = 360 / Nodes.length;
+			var theta = -120;
+
+			Nodes.forEach(function (el) {
+				var r2 = el.attr('width') / 2;
+				var x = cx + Math.cos(theta / 180 * Math.PI) * r1 - r2;
+				var y = cy + Math.sin(theta / 180 * Math.PI) * r1 - r2;
+				theta += inc;
+
+				if (el.id == Nodes[0].id) {
+					el.animate({'x':x, 'y':y, easing:'backIn', callback: Animations[AnimationIndex]}, 500);
+				}
+				else {
+					el.animate({'x':x, 'y':y, easing:'backIn'}, 500);
+				}
+			});
+		}
+
+		function create_comments(node, degree, text, callback=null) {
+			var r = node.attr('width');
+			var cx = node.attr('x') + r/2;
+			var cy = node.attr('y') + r/2;
+
+			var theta = degree / 180 * Math.PI;
+
+			var x1 = cx + Math.cos(theta) * r / 2;
+			var y1 = cy + Math.sin(theta) * r / 2;
+
+			var x2 = x1 + Math.cos(theta) * r / 2;
+			var y2 = y1 + Math.sin(theta) * r / 2;
+
+			var line = Paper.path('M'+x1+','+y1+'L'+x1+','+y1);
+			line.attr({'stroke': '#f00', 'stroke-width': 3, 'stroke-dasharray': '-'});
+			line.toBack();
+
+			var ltor = x2 - x1 > 0;
+
+			line.animate({path: 'M'+x1+','+y1+'L'+x2+','+y2, callback:function() {
+				TextDummy.attr({'text': text, 'font-size':20, 'font-weight':'bold'});
+				var t = TextDummy.clone();
+				var bbox = t.getBBox();
+
+				var prefix = 0;
+				var postfix = 0;
+				if (ltor) {
+					prefix = 100;
+					postfix = 10;
+				}
+				else {
+					prefix = -bbox.width - 100;
+					postfix = -bbox.width - 10;
+				}
+
+				t.attr({'x': x2 + prefix, 'y': y2, 'fill': '#fff', 'fill-opacity': 0, 'text-anchor': 'start'});
+				if (callback) {
+					t.animate({'x': x2 + postfix, 'fill-opacity': 1, 'callback':callback}, 200);
+				}
+				else {
+					t.animate({'x': x2 + postfix, 'fill-opacity': 1}, 200);
+				}
+			}}, 200);
+		}
+
+		function show_sending(node1, node2, color, line_drawing = true, callback = null, pulse = false, adjust1 = 0, adjust2 = 0) {
+
+			var sending_speed = 1000;
+			var line_speed = 200;
+
+			var r1 = node1.attr('width');
+			var x1 = node1.attr('x') + r1 / 2;
+			var y1 = node1.attr('y') + r1 / 2 + adjust1;
+
+			var r2 = node2.attr('width');
+			var x2 = node2.attr('x') + r2 / 2;
+			var y2 = node2.attr('y') + r2 / 2 + adjust2;
+
+			var d = Paper.circle(x1, y1, r1 / 8);
+			d.toBack();
+			d.attr({'fill': color});
+
+			var danim = function (dot, cb) {
+				if (pulse)
+				{
+					if (cb) cb();
+					setInterval(function () {
+						dot.animate({'cx': x2, 'cy':y2, 'callback': function () {
+							dot.remove();
+						}}, sending_speed);
+					}, line_speed);
+				}
+				else {
+					dot.animate({'cx': x2, 'cy':y2, 'callback': function () {
+						dot.remove();
+						if (cb) cb();
+					}}, sending_speed);
+				}
+			}
+
+			if (line_drawing) {
+				var line = Paper.path('M'+x1 + ','+y1+'L'+x1+','+y1);
+				line.attr({'stroke': color, 'stroke-width' : 4});
+				line.toBack();
+
+				line.animate({path: 'M'+x1 + ','+y1+'L'+x2+','+y2, 'callback':function() {
+					danim(d, callback);
+				}}, line_speed);
+			}
+			else {
+				danim(d, callback);
+			}
 		}
 
 		var AnimationIndex = 0;
@@ -55,26 +174,73 @@
 			function() {
 				var r = Nodes[0].attr('width');
 				AnimationIndex++;
+
+				var scene_time = 800;
+				//Nodes.clone();
 				Nodes.stop().animate({
 					"50%": {'stroke': '#fff', 'stroke-width': 3},
 					"100%": {'r' : r}
-				}, 1000).
-				animate({'width' : r/3, 'height': r/3}, 1000).
-				animate({'transform': ['t', r/3, r/3], callback: Animations[AnimationIndex]}, 1000);
+				}, scene_time).
+				animate({'width' : r/4, 'height': r/4}, scene_time);
+				Nodes.forEach(function(el) {
+					var x = el.attr('x');
+					var y = el.attr('y');
+					el.animate({'x': x + r*3/8, 'y': y + r*3/8}, scene_time);
+				});
+
+				Nodes[0].animate({'fill': '#00f', 'fill-opacity': 1,  callback: Animations[AnimationIndex]}, scene_time);
+				Nodes[Nodes.length - 1].animate({'fill': '#FF4500', 'fill-opacity': 1}, scene_time);
+				Nodes[2].animate({'fill': '#55ff55', 'fill-opacity': 1}, scene_time);
 			},
 			function() {
+				console.log("scene - 2");
+				AnimationIndex++;
+				layout_to_circle();
+			},
+			function() {
+				AnimationIndex++;
+				create_comments(Nodes[0], -135, "Advertiser");
+				create_comments(Nodes[2], -45, "System");
+				create_comments(Nodes[Nodes.length-1], -135, "Creator", Animations[AnimationIndex]);
+			},
+			function() {
+				show_sending(Nodes[0], Nodes[2], '#bbf', true, function () {
+					show_sending(Nodes[2], Nodes[0], '#fbb', false);
+					show_sending(Nodes[1], Nodes[2], '#bfb', true, function () {
+						show_sending(Nodes[2], Nodes[1], '#f83', true, function () {
+							show_sending(Nodes[1], Nodes[0], '#bbf', true, function() {
+								show_sending(Nodes[0], Nodes[1], '#bbf', false, function () {
+									show_sending(Nodes[0], Nodes[1], '#fbb', false);
+									show_sending(Nodes[3], Nodes[2], '#bfb', true, function () {
+										show_sending(Nodes[2], Nodes[3], '#f83', false, function () {
+											show_sending(Nodes[3], Nodes[0], '#bbf', true);
+											show_sending(Nodes[3], Nodes[1], '#bbf', true, function () {
+												show_sending(Nodes[0], Nodes[3], '#bbf', false);
+												show_sending(Nodes[1], Nodes[3], '#bbf', false, function () {
+													show_sending(Nodes[0], Nodes[3], '#fbb', false);
+													show_sending(Nodes[0], Nodes[1], '#fbb', false);
+												});
+											});
+										});
+									});
+								});
+							})
+						});
+					});
+				});
 			}
 		];
 		
 		function run () {
 			var holder = document.getElementById("holder"); 
-			var width = holder.clientWidth;
-			var height = holder.clientHeight;
-			var mSize = Math.max(width, height);
-			Paper = Raphael(0, 0, width, height);
-			console.log( mSize * Padding, width, height, NodeCount, Column);
-			Nodes = layout_rects(mSize * Padding, width, height, NodeCount, Column);
-
+			Width = holder.clientWidth;
+			Height = holder.clientHeight;
+			var mSize = Math.max(Width, Height);
+			Paper = Raphael(0, 0, Width, Height);
+			TextDummy = Paper.text(0, 0, "TextDummy");
+			TextDummy.hide();
+			Nodes = layout_rects(mSize * Padding, NodeCount, Column);
+			Nodes.attr({'fill': '#eee', 'fill-opacity': 1})
 			Animations[0]();
 		}
 
