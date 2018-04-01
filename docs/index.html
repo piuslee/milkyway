@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="mobile-web-app-capable" content="yes">
-	<title>Raphaël · Animation</title>
+	<title>MilkyWay</title>
 	<style media="screen">
 		body {margin:0; padding:0;}
 		#holder {
@@ -21,11 +21,15 @@
 		var NodeCount = 6;
 		var Nodes = null;
 		var Paper = null;
+		var Lines = null;
+		var Comments = null;
 
 		var Width = 0;
 		var Height = 0;
 
 		var TextDummy = null;
+
+		var Speed = 1;
 
 		function layout_rects(padding, count, column) {
 			var row = Math.ceil(count / column);
@@ -60,6 +64,8 @@
 			var inc = 360 / Nodes.length;
 			var theta = -120;
 
+			var speed = 500 * Speed;
+
 			Nodes.forEach(function (el) {
 				var r2 = el.attr('width') / 2;
 				var x = cx + Math.cos(theta / 180 * Math.PI) * r1 - r2;
@@ -67,10 +73,10 @@
 				theta += inc;
 
 				if (el.id == Nodes[0].id) {
-					el.animate({'x':x, 'y':y, easing:'backIn', callback: Animations[AnimationIndex]}, 500);
+					el.animate({'x':x, 'y':y, easing:'backIn', callback: Animations[AnimationIndex]}, speed);
 				}
 				else {
-					el.animate({'x':x, 'y':y, easing:'backIn'}, 500);
+					el.animate({'x':x, 'y':y, easing:'backIn'}, speed);
 				}
 			});
 		}
@@ -88,9 +94,12 @@
 			var x2 = x1 + Math.cos(theta) * r / 2;
 			var y2 = y1 + Math.sin(theta) * r / 2;
 
+			var speed = 200 * Speed;
+
 			var line = Paper.path('M'+x1+','+y1+'L'+x1+','+y1);
 			line.attr({'stroke': '#f00', 'stroke-width': 3, 'stroke-dasharray': '-'});
 			line.toBack();
+			Comments.push(line);
 
 			var ltor = x2 - x1 > 0;
 
@@ -112,18 +121,19 @@
 
 				t.attr({'x': x2 + prefix, 'y': y2, 'fill': '#fff', 'fill-opacity': 0, 'text-anchor': 'start'});
 				if (callback) {
-					t.animate({'x': x2 + postfix, 'fill-opacity': 1, 'callback':callback}, 200);
+					t.animate({'x': x2 + postfix, 'fill-opacity': 1, 'callback':callback}, speed);
 				}
 				else {
-					t.animate({'x': x2 + postfix, 'fill-opacity': 1}, 200);
+					t.animate({'x': x2 + postfix, 'fill-opacity': 1}, speed);
 				}
-			}}, 200);
+				Comments.push(t);
+			}}, speed);
 		}
 
-		function show_sending(node1, node2, color, line_drawing = true, callback = null, pulse = false, adjust1 = 0, adjust2 = 0) {
+		function show_sending(weight, node1, node2, color, line_drawing = true, callback = null, pulse = false, adjust1 = 0, adjust2 = 0) {
 
-			var sending_speed = 1000;
-			var line_speed = 200;
+			var sending_speed = 1000 * Speed;
+			var line_speed = 200 * Speed;
 
 			var r1 = node1.attr('width');
 			var x1 = node1.attr('x') + r1 / 2;
@@ -133,9 +143,9 @@
 			var x2 = node2.attr('x') + r2 / 2;
 			var y2 = node2.attr('y') + r2 / 2 + adjust2;
 
-			var d = Paper.circle(x1, y1, r1 / 8);
+			var d = Paper.circle(x1, y1, r1 / 8 * weight);
 			d.toBack();
-			d.attr({'fill': color});
+			d.attr({'fill': color, 'stroke-width':0});
 
 			var danim = function (dot, cb) {
 				if (pulse)
@@ -159,6 +169,7 @@
 				var line = Paper.path('M'+x1 + ','+y1+'L'+x1+','+y1);
 				line.attr({'stroke': color, 'stroke-width' : 4});
 				line.toBack();
+				Lines.push(line);
 
 				line.animate({path: 'M'+x1 + ','+y1+'L'+x2+','+y2, 'callback':function() {
 					danim(d, callback);
@@ -169,13 +180,35 @@
 			}
 		}
 
+		function starpath(cx, cy, r) {
+			var ps = 5;
+			var theta = -90;
+			var inc = 360 / ps;
+
+			var t = theta / 180 * Math.PI;
+			var px = cx + Math.cos(t) * r;
+			var py = cy + Math.sin(t) * r;
+			var pathstr = 'M' + px + ',' + py;
+
+			for (var i=0; i<ps; i++)
+			{
+				theta += inc*2;
+				t = theta / 180 * Math.PI;
+				px = cx + Math.cos(t) * r;
+				py = cy + Math.sin(t) * r;
+				pathstr += 'L'+px+','+py;
+			}
+
+			return pathstr;
+		}
+
 		var AnimationIndex = 0;
 		var Animations = [
 			function() {
 				var r = Nodes[0].attr('width');
 				AnimationIndex++;
 
-				var scene_time = 800;
+				var scene_time = 500;
 				//Nodes.clone();
 				Nodes.stop().animate({
 					"50%": {'stroke': '#fff', 'stroke-width': 3},
@@ -193,7 +226,6 @@
 				Nodes[2].animate({'fill': '#55ff55', 'fill-opacity': 1}, scene_time);
 			},
 			function() {
-				console.log("scene - 2");
 				AnimationIndex++;
 				layout_to_circle();
 			},
@@ -204,21 +236,37 @@
 				create_comments(Nodes[Nodes.length-1], -135, "Creator", Animations[AnimationIndex]);
 			},
 			function() {
-				show_sending(Nodes[0], Nodes[2], '#bbf', true, function () {
-					show_sending(Nodes[2], Nodes[0], '#fbb', false);
-					show_sending(Nodes[1], Nodes[2], '#bfb', true, function () {
-						show_sending(Nodes[2], Nodes[1], '#f83', true, function () {
-							show_sending(Nodes[1], Nodes[0], '#bbf', true, function() {
-								show_sending(Nodes[0], Nodes[1], '#bbf', false, function () {
-									show_sending(Nodes[0], Nodes[1], '#fbb', false);
-									show_sending(Nodes[3], Nodes[2], '#bfb', true, function () {
-										show_sending(Nodes[2], Nodes[3], '#f83', false, function () {
-											show_sending(Nodes[3], Nodes[0], '#bbf', true);
-											show_sending(Nodes[3], Nodes[1], '#bbf', true, function () {
-												show_sending(Nodes[0], Nodes[3], '#bbf', false);
-												show_sending(Nodes[1], Nodes[3], '#bbf', false, function () {
-													show_sending(Nodes[0], Nodes[3], '#fbb', false);
-													show_sending(Nodes[0], Nodes[1], '#fbb', false);
+				AnimationIndex++;
+				show_sending(1, Nodes[0], Nodes[2], '#bbf', true, function () {
+					show_sending(3, Nodes[2], Nodes[0], '#fbb', false);
+					show_sending(1, Nodes[1], Nodes[2], '#bfb', true, function () {
+						show_sending(1, Nodes[2], Nodes[1], '#f83', false, function () {
+							show_sending(1, Nodes[1], Nodes[0], '#bbf', true, function() {
+								show_sending(1, Nodes[0], Nodes[1], '#bbf', false, function () {
+									show_sending(1, Nodes[0], Nodes[1], '#fbb', false);
+									show_sending(1, Nodes[3], Nodes[2], '#bfb', true, function () {
+										show_sending(1, Nodes[2], Nodes[3], '#f83', false, function () {
+											show_sending(1, Nodes[3], Nodes[0], '#bbf', true);
+											show_sending(1, Nodes[3], Nodes[1], '#bbf', true, function () {
+												show_sending(1, Nodes[0], Nodes[3], '#bbf', false);
+												show_sending(1, Nodes[1], Nodes[3], '#bbf', false, function () {
+													show_sending(1, Nodes[0], Nodes[3], '#fbb', false);
+													show_sending(1, Nodes[0], Nodes[1], '#fbb', false, function () {
+														show_sending(1, Nodes[4], Nodes[2], '#bfb', true, function () {
+															show_sending(1, Nodes[2], Nodes[4], '#f83', false, function () {
+																show_sending(1, Nodes[4], Nodes[0], '#bbf', true);
+																show_sending(1, Nodes[4], Nodes[1], '#bbf', true);
+																show_sending(1, Nodes[4], Nodes[3], '#bbf', true, function () {
+																	show_sending(1, Nodes[0], Nodes[4], '#bbf', true);
+																	show_sending(1, Nodes[1], Nodes[4], '#bbf', true);
+																	show_sending(1, Nodes[3], Nodes[4], '#bbf', true, function () {
+																		show_sending(1, Nodes[0], Nodes[1], '#fbb', true);
+																		show_sending(1, Nodes[0], Nodes[3], '#fbb', true, Animations[AnimationIndex]);
+																	});
+																});
+															})
+														})
+													});
 												});
 											});
 										});
@@ -227,6 +275,122 @@
 							})
 						});
 					});
+				});
+			},
+			function () {
+				AnimationIndex++;
+				var speed = 800 * Speed;
+				Lines.animate({'opacity':0.1}, speed, function () {
+					//Lines.remove();
+					//Lines = Paper.set();
+
+					show_sending(1, Nodes[5], Nodes[2], '#f00', true, function () {
+						show_sending(1, Nodes[1], Nodes[2], '#bfb', true, function () {
+							show_sending(1, Nodes[2], Nodes[1], '#f83', false, function () {
+								show_sending(2, Nodes[1], Nodes[5], '#fbb', true, function () {
+									show_sending(1, Nodes[5], Nodes[1], '#f00', false, function() {
+										show_sending(1, Nodes[3], Nodes[2], '#bfb', true, function () {
+											show_sending(1, Nodes[2], Nodes[3], '#f83', false, function () {
+												show_sending(2, Nodes[3], Nodes[5], '#fbb', true);
+												show_sending(1, Nodes[3], Nodes[1], '#fbb', true, function () {
+													show_sending(1, Nodes[5], Nodes[3], '#f00', false);
+													show_sending(1, Nodes[1], Nodes[3], '#f00', false, function () {
+														show_sending(1, Nodes[4], Nodes[2], '#bfb', true, function () {
+															show_sending(1, Nodes[2], Nodes[4], '#f83', false, function () {
+																show_sending(1, Nodes[4], Nodes[1], '#fbb', true);
+																show_sending(1, Nodes[4], Nodes[3], '#fbb', true);
+																show_sending(2, Nodes[4], Nodes[5], '#fbb', true, function () {
+																	show_sending(1, Nodes[1], Nodes[4], '#f00', false);
+																	show_sending(1, Nodes[3], Nodes[4], '#f00', false);
+																	show_sending(1, Nodes[5], Nodes[4], '#f00', false, Animations[AnimationIndex]);
+																});
+															})
+														})
+													});
+												});
+											})
+										})
+									})
+								})
+							})
+						})
+					});
+				});
+			},
+			function () {
+				var speed = 800 * Speed;
+				AnimationIndex++;
+				Lines.animate({'opacity':0}, speed, function () {
+					Lines.remove();
+				});
+				Comments.animate({'opacity': 0}, speed, Animations[AnimationIndex]);
+			},
+			function () {
+				AnimationIndex++;
+				var speed = 800 * Speed;
+				var logor = Math.min(Width, Height) * 0.4;
+				var cx = Width/2;
+				var cy = Height/2;
+				var outcircle = Paper.circle(cx, cy, logor);
+				outcircle.attr({'stroke':'#fff', 'stroke-width':20, 'opacity': 0});
+				outcircle.animate({'opacity':1}, speed);
+
+				function transformStar(node, angle, r1, r2) {
+					var x = cx + Math.cos(angle / 180 * Math.PI) * r1;
+					var y = cy + Math.sin(angle / 180 * Math.PI) * r1;
+					var path = starpath(x, y, r2);
+					var star = Paper.path(path);
+					star.attr({'fill':'#fff', 'stroke-width':0, 'opacity':0});
+					
+					var fx = x - node.attr('width')/2;
+					var fy = y - node.attr('height')/2;
+					node.animate({'opacity': 0, 'x':fx, 'y': fy}, speed/2, function () {
+						star.animate({'opacity':1}, speed/2);
+					});
+				}
+
+				transformStar(Nodes[3], 45, logor * 0.7,  logor * 0.2);
+				transformStar(Nodes[1], -70, logor * 0.8,  logor * 0.05);
+				transformStar(Nodes[2], -35, logor * 0.8,  logor * 0.1);
+				transformStar(Nodes[4], 150, logor * 0.8,  logor * 0.1);
+				transformStar(Nodes[5], 185, logor * 0.8,  logor * 0.05);
+
+				var l1x = cx + Math.cos(-40 / 180 * Math.PI) * logor;
+				var l1y = cy + Math.sin(-40 / 180 * Math.PI) * logor;
+
+				var linepath = 'M'+l1x+','+l1y;
+
+				var l2x = cx - logor * 0.3;
+				var l2y = l1y;
+
+				linepath += 'L'+l2x+','+l2y;
+
+				var l3x = l2x;
+				var l3y = l2y + logor * 0.35;
+				var l3xc = l3x - logor * 0.25;
+
+				linepath += 'C'+ l3xc + ','+ l2y + ' ' + l3xc + ',' + l3y + ' ' + l3x+','+l3y;
+
+				var l4x = l3x + logor * 0.35;
+				var l4y = l3y;
+
+				linepath += 'L'+l4x+','+l4y;
+
+				var l5x = l4x;
+				var l5y = l4y + logor * 0.35;
+				var l5xc = l5x + logor * 0.25;
+
+				linepath += 'C'+ l5xc + ','+ l4y + ' ' + l5xc + ',' + l5y + ' ' + l5x+','+l5y;
+
+				var l6x = cx - Math.sqrt(Math.pow(logor, 2) - Math.pow((l4y - cy), 2)) - 5;
+				var l6y = l5y;
+
+				linepath += 'L'+l6x+','+l6y; 
+
+				var line = Paper.path(linepath);
+				line.attr({'opacity': 0, 'stroke-width': 20, 'stroke': '#fff'});
+				Nodes[0].animate({'x':cx, 'y':cy, 'opacity':0}, speed/2, function () {
+					line.animate({'opacity':1}, speed/2);
 				});
 			}
 		];
@@ -239,8 +403,12 @@
 			Paper = Raphael(0, 0, Width, Height);
 			TextDummy = Paper.text(0, 0, "TextDummy");
 			TextDummy.hide();
+			Lines = Paper.set();
+			Comments = Paper.set();
 			Nodes = layout_rects(mSize * Padding, NodeCount, Column);
 			Nodes.attr({'fill': '#eee', 'fill-opacity': 1})
+
+			//Speed = 0.1;
 			Animations[0]();
 		}
 
