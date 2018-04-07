@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html>
-<!-- 1080 X 1920 -->
+<!-- 980 X 1707 -->
 <!-- 360 X 640 -->
 
 <head>
     <meta charset="utf-8">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name=mobile-web-app-capable content=yes>
+    <meta name=mobile-web-app-status-bar-style content=black>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+    <link href="client/milkyway_icon.png" rel="icon" sizes="128x128" />
     <link rel="stylesheet" type="text/css" href="../css/style.css">
     <link rel="stylesheet" type="text/css" href="../css/custom.css">
     <script>
@@ -30,6 +33,12 @@
             }
             );
 
+            var log = document.getElementById("log");
+            log.textContent = document.body.clientWidth + ", " + document.body.clientHeight;
+
+            window.setTimeout(function () {
+                window.scrollTo(0, 1);
+            }, 0);
         }
 
         );
@@ -58,14 +67,12 @@
             </div>
             <!-- nav-right -->
         </nav>
+        <div class="top_media">
+            <div class="contents-header-title">Milky Way</div>
+        </div>
 
-        <a href="http://codepen.io/tonkec/" class="ua" target="_blank">
-            <i class="fa fa-user"></i>
-        </a>
 
-        <div class="ruler"></div>
-        <div class="contents-header-title">Milky Way</div>
-
+        <div id="log"></div>
     </main>
 
     <div class="sidebar">

@@ -1,12 +1,15 @@
 .contents-header-title {
     font-weight: bold;
-    font-size: 30px;
+    font-size: 1em;
     color:#f00;
     text-align: center;
 }
-.ruler {
-    width:1080px;
-    height:20px;
+.top_media {
+    height: 1080px;
+    background-color:#333;
+}
 
-    background-color:green;
+#log {
+    font-size:30px;
+    color:#0f0;
 }
