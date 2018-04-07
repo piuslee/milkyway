@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<!-- 1080 X 1920 -->
+<!-- 360 X 640 -->
+
+<head>
+    <meta charset="utf-8">
+    <meta name="mobile-web-app-capable" content="yes">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/style.css">
+    <link rel="stylesheet" type="text/css" href="../css/custom.css">
+    <script>
+        $(document).ready(function () {
+
+            function toggleSidebar() {
+                $(".button").toggleClass("active");
+                $("main").toggleClass("move-to-left");
+                $(".sidebar-item").toggleClass("active");
+            }
+
+            $(".button").on("click tap", function () {
+                toggleSidebar();
+            }
+            );
+
+            $(document).keyup(function (e) {
+                if (e.keyCode === 27) {
+                    toggleSidebar();
+                }
+            }
+            );
+
+        }
+
+        );
+    </script>
+</head>
+
+<body>
+    <div class="nav-right visible-xs">
+        <div class="button" id="btn">
+            <div class="bar top"></div>
+            <div class="bar middle"></div>
+            <div class="bar bottom"></div>
+        </div>
+    </div>
+    <!-- nav-right -->
+    <main>
+
+
+        <nav>
+            <div class="nav-right hidden-xs">
+                <div class="button" id="btn">
+                    <div class="bar top"></div>
+                    <div class="bar middle"></div>
+                    <div class="bar bottom"></div>
+                </div>
+            </div>
+            <!-- nav-right -->
+        </nav>
+
+        <a href="http://codepen.io/tonkec/" class="ua" target="_blank">
+            <i class="fa fa-user"></i>
+        </a>
+
+        <div class="contents-header-title">Milky Way</div>
+
+    </main>
+
+    <div class="sidebar">
+        <ul class="sidebar-list">
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-anchor">Item 1</a>
+            </li>
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-anchor">Item 2</a>
+            </li>
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-anchor">Item 3</a>
+            </li>
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-anchor">Item 4</a>
+            </li>
+        </ul>
+    </div>
+</body>
+
+</html>
